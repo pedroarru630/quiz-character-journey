@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import QuizLayout from '@/components/QuizLayout';
 import { CreditCard, Phone, Mail, RotateCcw } from 'lucide-react';
+import SecurityValidationModal from '@/components/SecurityValidationModal';
+import { validateCPF, validatePhone, formatOnlyNumbers } from '@/utils/validation';
 
 const Withdraw = () => {
   const [selectedMethod, setSelectedMethod] = useState('cpf');
@@ -12,6 +14,11 @@ const Withdraw = () => {
     whatsapp: '',
     amount: ''
   });
+  const [errors, setErrors] = useState({
+    pixKey: '',
+    whatsapp: ''
+  });
+  const [showModal, setShowModal] = useState(false);
 
   const availableBalance = parseFloat(localStorage.getItem('totalEarnings') || '0');
   const dollarRate = 5.60; // R$5.60 per dollar
@@ -29,10 +36,80 @@ const Withdraw = () => {
     return method ? method.placeholder : 'Digite sua chave PIX';
   };
 
+  const validatePixKey = (value: string) => {
+    if (selectedMethod === 'cpf') {
+      if (!value || value.length < 11) {
+        return 'CPF inválido. Por favor, verifique e tente novamente.';
+      }
+      if (!validateCPF(value)) {
+        return 'CPF inválido. Por favor, verifique e tente novamente.';
+      }
+    }
+    return '';
+  };
+
+  const validatePhoneNumber = (value: string) => {
+    if (!value || value.length < 11) {
+      return 'Número de telefone inválido. Por favor, verifique e tente novamente.';
+    }
+    if (!validatePhone(value)) {
+      return 'Número de telefone inválido. Por favor, verifique e tente novamente.';
+    }
+    return '';
+  };
+
+  const handlePixKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // For CPF, only allow numbers and limit to 11 digits
+    if (selectedMethod === 'cpf') {
+      value = formatOnlyNumbers(value).slice(0, 11);
+    }
+    
+    setFormData({ ...formData, pixKey: value });
+    
+    // Clear error when user starts typing
+    if (errors.pixKey) {
+      setErrors({ ...errors, pixKey: '' });
+    }
+  };
+
+  const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Only allow numbers and limit to 11 digits
+    const value = formatOnlyNumbers(e.target.value).slice(0, 11);
+    setFormData({ ...formData, whatsapp: value });
+    
+    // Clear error when user starts typing
+    if (errors.whatsapp) {
+      setErrors({ ...errors, whatsapp: '' });
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle withdrawal logic here
-    console.log('Withdrawal request:', formData);
+    
+    // Validate PIX key
+    const pixKeyError = validatePixKey(formData.pixKey);
+    
+    // Validate phone number
+    const phoneError = validatePhoneNumber(formData.whatsapp);
+    
+    if (pixKeyError || phoneError) {
+      setErrors({
+        pixKey: pixKeyError,
+        whatsapp: phoneError
+      });
+      return;
+    }
+    
+    // If validation passes, show the security modal
+    setShowModal(true);
+  };
+
+  const handleValidation = () => {
+    // Handle the validation process
+    console.log('Validation process started');
+    setShowModal(false);
   };
 
   return (
@@ -95,9 +172,14 @@ const Withdraw = () => {
               type="text"
               placeholder={getCurrentPlaceholder()}
               value={formData.pixKey}
-              onChange={(e) => setFormData({ ...formData, pixKey: e.target.value })}
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
+              onChange={handlePixKeyChange}
+              className={`w-full p-3 bg-gray-700 border rounded-lg text-white placeholder-gray-400 ${
+                errors.pixKey ? 'border-red-500' : 'border-gray-600'
+              }`}
             />
+            {errors.pixKey && (
+              <p className="text-red-400 text-sm mt-1">{errors.pixKey}</p>
+            )}
           </div>
 
           <div>
@@ -117,9 +199,14 @@ const Withdraw = () => {
               type="tel"
               placeholder="Digite seu telefone com DDD"
               value={formData.whatsapp}
-              onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
+              onChange={handleWhatsappChange}
+              className={`w-full p-3 bg-gray-700 border rounded-lg text-white placeholder-gray-400 ${
+                errors.whatsapp ? 'border-red-500' : 'border-gray-600'
+              }`}
             />
+            {errors.whatsapp && (
+              <p className="text-red-400 text-sm mt-1">{errors.whatsapp}</p>
+            )}
           </div>
 
           <div>
@@ -145,6 +232,13 @@ const Withdraw = () => {
           </Button>
         </form>
       </div>
+
+      <SecurityValidationModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onValidate={handleValidation}
+        dollarRate={dollarRate}
+      />
     </QuizLayout>
   );
 };
