@@ -1,7 +1,8 @@
 
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Lock, AlertTriangle, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface SecurityValidationModalProps {
   isOpen: boolean;
@@ -11,14 +12,35 @@ interface SecurityValidationModalProps {
 }
 
 const SecurityValidationModal = ({ isOpen, onClose, onValidate, dollarRate }: SecurityValidationModalProps) => {
+  const navigate = useNavigate();
+
+  const handleValidateClick = () => {
+    onValidate();
+    navigate('/vsl');
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-md p-0">
+      <DialogContent className="bg-black border-gray-800 text-white max-w-md p-0">
+        <DialogTitle className="sr-only">Validação de Segurança</DialogTitle>
+        <DialogDescription className="sr-only">
+          Modal para validação de segurança antes do saque
+        </DialogDescription>
+        
         <div className="p-6">
           {/* Header with dollar rate */}
           <div className="text-center mb-6">
             <p className="text-gray-400 text-sm">Cotação do dólar hoje:</p>
             <p className="text-green-400 font-bold text-lg">R${dollarRate.toFixed(2)}</p>
+          </div>
+
+          {/* Spotify Logo */}
+          <div className="flex justify-center mb-6">
+            <img 
+              src="/lovable-uploads/1cc76a91-706e-4d83-b1ff-759f4dedabee.png" 
+              alt="Spotify" 
+              className="h-8"
+            />
           </div>
 
           {/* Lock and Spotify connection visual */}
@@ -80,7 +102,7 @@ const SecurityValidationModal = ({ isOpen, onClose, onValidate, dollarRate }: Se
 
           {/* Validate button */}
           <Button
-            onClick={onValidate}
+            onClick={handleValidateClick}
             className="w-full bg-green-500 hover:bg-green-600 text-black font-bold py-3 rounded-lg text-base"
           >
             VERIFICAR CONTA

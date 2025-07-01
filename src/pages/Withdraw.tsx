@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import QuizLayout from '@/components/QuizLayout';
 import { CreditCard, Phone, Mail, RotateCcw } from 'lucide-react';
 import SecurityValidationModal from '@/components/SecurityValidationModal';
@@ -21,8 +21,14 @@ const Withdraw = () => {
   const [showModal, setShowModal] = useState(false);
 
   const availableBalance = parseFloat(localStorage.getItem('totalEarnings') || '0');
-  const dollarRate = 5.60; // R$5.60 per dollar
+  const dollarRate = 5.60;
   const realValue = availableBalance * dollarRate;
+  const minimumWithdrawal = 5;
+
+  // Set withdrawal amount to full balance on component mount
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, amount: availableBalance.toString() }));
+  }, [availableBalance]);
 
   const paymentMethods = [
     { id: 'cpf', label: 'CPF', icon: CreditCard, active: true, placeholder: 'Digite seu CPF' },
@@ -61,25 +67,21 @@ const Withdraw = () => {
   const handlePixKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     
-    // For CPF, only allow numbers and limit to 11 digits
     if (selectedMethod === 'cpf') {
       value = formatOnlyNumbers(value).slice(0, 11);
     }
     
     setFormData({ ...formData, pixKey: value });
     
-    // Clear error when user starts typing
     if (errors.pixKey) {
       setErrors({ ...errors, pixKey: '' });
     }
   };
 
   const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Only allow numbers and limit to 11 digits
     const value = formatOnlyNumbers(e.target.value).slice(0, 11);
     setFormData({ ...formData, whatsapp: value });
     
-    // Clear error when user starts typing
     if (errors.whatsapp) {
       setErrors({ ...errors, whatsapp: '' });
     }
@@ -88,10 +90,12 @@ const Withdraw = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate PIX key
-    const pixKeyError = validatePixKey(formData.pixKey);
+    // Check minimum withdrawal amount
+    if (availableBalance < minimumWithdrawal) {
+      return;
+    }
     
-    // Validate phone number
+    const pixKeyError = validatePixKey(formData.pixKey);
     const phoneError = validatePhoneNumber(formData.whatsapp);
     
     if (pixKeyError || phoneError) {
@@ -102,15 +106,15 @@ const Withdraw = () => {
       return;
     }
     
-    // If validation passes, show the security modal
     setShowModal(true);
   };
 
   const handleValidation = () => {
-    // Handle the validation process
     console.log('Validation process started');
     setShowModal(false);
   };
+
+  const isWithdrawalDisabled = availableBalance < minimumWithdrawal;
 
   return (
     <QuizLayout showProgress={false}>
@@ -135,6 +139,13 @@ const Withdraw = () => {
             <span className="text-gray-300">Valor em Reais (R$):</span>
             <span className="text-green-400 font-bold">R${realValue.toFixed(2)}</span>
           </div>
+          {isWithdrawalDisabled && (
+            <div className="bg-red-500/20 border border-red-500 rounded-lg p-3 mt-4">
+              <p className="text-red-400 text-sm">
+                Saldo mínimo para saque: U$5.00
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Payment Method Selection */}
@@ -215,20 +226,27 @@ const Withdraw = () => {
               type="number"
               placeholder="U$0"
               value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
-              max={availableBalance}
+              className="w-full p-3 bg-gray-600 border border-gray-500 rounded-lg text-gray-400 placeholder-gray-400 cursor-not-allowed"
+              readOnly
             />
             <p className="text-xs text-gray-400 mt-1">
               Valor equivalente em Reais: R${((parseFloat(formData.amount) || 0) * dollarRate).toFixed(2)}
+            </p>
+            <p className="text-xs text-green-400 mt-1">
+              Saque automático do saldo completo
             </p>
           </div>
 
           <Button
             type="submit"
-            className="w-full bg-green-500 hover:bg-green-600 text-black font-bold py-4 rounded-lg text-lg mt-6"
+            disabled={isWithdrawalDisabled}
+            className={`w-full font-bold py-4 rounded-lg text-lg mt-6 ${
+              isWithdrawalDisabled 
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                : 'bg-green-500 hover:bg-green-600 text-black'
+            }`}
           >
-            Solicitar Saque
+            {isWithdrawalDisabled ? 'Saldo Insuficiente' : 'Solicitar Saque'}
           </Button>
         </form>
       </div>
