@@ -1,13 +1,32 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import QuizLayout from '@/components/QuizLayout';
 
 const Index = () => {
+  const navigate = useNavigate();
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <QuizLayout showProgress={false}>
       <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-6 text-white">
+            Quiz dos Artistas
+          </h1>
+          
+          <p className="text-gray-300 text-lg mb-8">
+            Descubra qual artista combina mais com você e ganhe recompensas!
+          </p>
+        </div>
+        
+        <Button
+          onClick={() => navigate('/start')}
+          className="w-full bg-green-500 hover:bg-green-600 text-black font-bold py-4 px-6 rounded-full text-lg"
+        >
+          Começar Quiz
+        </Button>
       </div>
-    </div>
+    </QuizLayout>
   );
 };
 
