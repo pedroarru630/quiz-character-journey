@@ -1,9 +1,34 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
 
 const VSL = () => {
   const [urgencyCount, setUrgencyCount] = useState(47);
+  const [progress, setProgress] = useState(0);
+  const [percentage, setPercentage] = useState(0);
+
+  useEffect(() => {
+    // 5 minutes = 300 seconds = 300,000 milliseconds
+    const totalDuration = 300000;
+    const updateInterval = 100; // Update every 100ms for smooth animation
+    
+    const timer = setInterval(() => {
+      setProgress(prev => {
+        const newProgress = prev + (updateInterval / totalDuration) * 100;
+        if (newProgress >= 100) {
+          clearInterval(timer);
+          return 100;
+        }
+        return newProgress;
+      });
+    }, updateInterval);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    setPercentage(Math.round(progress));
+  }, [progress]);
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -22,22 +47,22 @@ const VSL = () => {
       {/* Main content */}
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Urgency Alert */}
-        <div className="bg-gradient-to-r from-red-600 to-orange-500 rounded-lg p-4 mb-8 text-center">
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-8 text-center">
           <div className="flex items-center justify-center mb-2">
-            <AlertTriangle className="w-6 h-6 text-white mr-2" />
+            <AlertTriangle className="w-6 h-6 text-yellow-400 mr-2" />
             <span className="text-white font-bold text-lg">🔥 APENAS {urgencyCount} VAGAS</span>
           </div>
-          <p className="text-white text-sm">
+          <p className="text-gray-300 text-sm mb-3">
             Vagas sendo preenchidas durante o vídeo...
           </p>
-          <div className="w-full bg-red-800 rounded-full h-2 mt-3">
+          <div className="w-full bg-gray-700 rounded-full h-3 mb-2">
             <div 
-              className="bg-red-400 h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${100 - (urgencyCount / 100 * 76)}%` }}
+              className="bg-red-500 h-3 rounded-full transition-all duration-100 ease-linear" 
+              style={{ width: `${progress}%` }}
             ></div>
           </div>
-          <p className="text-white text-xs mt-1">
-            {100 - urgencyCount}% das vagas já foram preenchidas
+          <p className="text-white text-sm font-semibold">
+            {percentage}% das vagas já foram preenchidas
           </p>
         </div>
 
