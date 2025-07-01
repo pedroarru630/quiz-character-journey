@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -124,9 +125,9 @@ const Quiz = () => {
                 onClick={() => handleRatingSelect(num.toString())}
                 className={`aspect-square ${
                   currentAnswers.rating === num.toString() 
-                    ? 'bg-green-500 border-green-500' 
-                    : 'hover:bg-green-500 hover:border-green-500'
-                } bg-[#292929] border-2 border-[#292929] rounded-2xl flex items-center justify-center text-2xl font-bold text-white transition-all duration-200`}
+                    ? 'bg-green-500 border-green-500 text-white' 
+                    : 'bg-[#292929] border-[#292929] text-white hover:bg-green-500 hover:border-green-500'
+                } border-2 rounded-2xl flex items-center justify-center text-2xl font-bold transition-all duration-200`}
               >
                 {num}
               </button>
@@ -145,9 +146,9 @@ const Quiz = () => {
               onClick={() => handleRecommendationSelect('sim')}
               className={`${
                 currentAnswers.recommendation === 'sim'
-                  ? 'bg-green-500 border-green-500'
-                  : 'hover:bg-green-500 hover:border-green-500'
-              } bg-[#292929] text-white border-2 border-[#292929] font-bold py-6 rounded-2xl text-lg transition-all duration-200`}
+                  ? 'bg-green-500 border-green-500 text-white'
+                  : 'bg-[#292929] border-[#292929] text-white hover:bg-green-500 hover:border-green-500'
+              } border-2 font-bold py-6 rounded-2xl text-lg transition-all duration-200`}
             >
               Sim
             </Button>
@@ -156,9 +157,9 @@ const Quiz = () => {
               onClick={() => handleRecommendationSelect('nao')}
               className={`${
                 currentAnswers.recommendation === 'nao'
-                  ? 'bg-green-500 border-green-500'
-                  : 'hover:bg-green-500 hover:border-green-500'
-              } bg-[#292929] text-white border-2 border-[#292929] font-bold py-6 rounded-2xl text-lg transition-all duration-200`}
+                  ? 'bg-green-500 border-green-500 text-white'
+                  : 'bg-[#292929] border-[#292929] text-white hover:bg-green-500 hover:border-green-500'
+              } border-2 font-bold py-6 rounded-2xl text-lg transition-all duration-200`}
             >
               Não
             </Button>
@@ -176,9 +177,9 @@ const Quiz = () => {
               onClick={() => handleAgeGroupSelect('-18')}
               className={`${
                 currentAnswers.ageGroup === '-18'
-                  ? 'bg-green-500 border-green-500'
-                  : 'hover:bg-green-500 hover:border-green-500'
-              } bg-[#292929] text-white border-2 border-[#292929] font-bold py-6 rounded-2xl text-lg transition-all duration-200`}
+                  ? 'bg-green-500 border-green-500 text-white'
+                  : 'bg-[#292929] border-[#292929] text-white hover:bg-green-500 hover:border-green-500'
+              } border-2 font-bold py-6 rounded-2xl text-lg transition-all duration-200`}
             >
               -18 anos
             </Button>
@@ -187,9 +188,9 @@ const Quiz = () => {
               onClick={() => handleAgeGroupSelect('+18')}
               className={`${
                 currentAnswers.ageGroup === '+18'
-                  ? 'bg-green-500 border-green-500'
-                  : 'hover:bg-green-500 hover:border-green-500'
-              } bg-[#292929] text-white border-2 border-[#292929] font-bold py-6 rounded-2xl text-lg transition-all duration-200`}
+                  ? 'bg-green-500 border-green-500 text-white'
+                  : 'bg-[#292929] border-[#292929] text-white hover:bg-green-500 hover:border-green-500'
+              } border-2 font-bold py-6 rounded-2xl text-lg transition-all duration-200`}
             >
               +18 anos
             </Button>
