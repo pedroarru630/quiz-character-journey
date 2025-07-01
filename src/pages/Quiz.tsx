@@ -1,9 +1,12 @@
 
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import QuizLayout from '@/components/QuizLayout';
 import RewardPopup from '@/components/RewardPopup';
+import ImagePreloader from '@/components/ImagePreloader';
+import { useQuizState } from '@/hooks/useQuizState';
+import { useState } from 'react';
 
 const artists = [
   {
@@ -29,18 +32,26 @@ const artists = [
 ];
 
 const Quiz = () => {
-  const [currentArtistIndex, setCurrentArtistIndex] = useState(0);
-  const [allAnswers, setAllAnswers] = useState<any[]>([]);
-  const [currentAnswers, setCurrentAnswers] = useState({
-    rating: '',
-    recommendation: '',
-    ageGroup: ''
-  });
+  const { quizState, updateQuizState, resetQuizState } = useQuizState();
   const [showReward, setShowReward] = useState(false);
   const [rewardAmount, setRewardAmount] = useState('');
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const navigate = useNavigate();
 
-  const currentArtist = artists[currentArtistIndex];
+  const currentArtist = artists[quizState.currentArtistIndex];
+
+  // Mark quiz as started when component mounts
+  useEffect(() => {
+    updateQuizState({ hasStarted: true });
+  }, []);
+
+  // Preload all artist images on component mount
+  useEffect(() => {
+    artists.forEach(artist => {
+      const img = new Image();
+      img.src = artist.image;
+    });
+  }, []);
 
   const generateReward = () => {
     const amount = (Math.random() * (15 - 5) + 5).toFixed(2);
@@ -48,7 +59,8 @@ const Quiz = () => {
   };
 
   const handleSubmit = () => {
-    if (currentAnswers.rating && currentAnswers.recommendation && currentAnswers.ageGroup) {
+    if (quizState.currentAnswers.rating && quizState.currentAnswers.recommendation && quizState.currentAnswers.ageGroup) {
+      setIsTransitioning(true);
       const amount = generateReward();
       setRewardAmount(amount);
       setShowReward(true);
@@ -62,22 +74,26 @@ const Quiz = () => {
       window.dispatchEvent(new Event('earningsUpdated'));
       
       // Save current answers
-      const newAnswers = [...allAnswers, { 
+      const newAnswers = [...quizState.allAnswers, { 
         artist: currentArtist.name, 
-        ...currentAnswers 
+        ...quizState.currentAnswers 
       }];
-      setAllAnswers(newAnswers);
+      updateQuizState({ allAnswers: newAnswers });
       
       setTimeout(() => {
         setShowReward(false);
         
         // Check if there are more artists
-        if (currentArtistIndex < artists.length - 1) {
+        if (quizState.currentArtistIndex < artists.length - 1) {
           // Move to next artist
-          setCurrentArtistIndex(currentArtistIndex + 1);
-          setCurrentAnswers({ rating: '', recommendation: '', ageGroup: '' });
+          updateQuizState({
+            currentArtistIndex: quizState.currentArtistIndex + 1,
+            currentAnswers: { rating: '', recommendation: '', ageGroup: '' }
+          });
+          setIsTransitioning(false);
         } else {
-          // All artists completed, go to final result
+          // All artists completed, reset quiz state and go to final result
+          resetQuizState();
           navigate('/result');
         }
       }, 2000);
@@ -85,24 +101,40 @@ const Quiz = () => {
   };
 
   const handleRatingSelect = (rating: string) => {
-    setCurrentAnswers(prev => ({ ...prev, rating }));
+    updateQuizState({
+      currentAnswers: { ...quizState.currentAnswers, rating }
+    });
   };
 
   const handleRecommendationSelect = (recommendation: string) => {
-    setCurrentAnswers(prev => ({ ...prev, recommendation }));
+    updateQuizState({
+      currentAnswers: { ...quizState.currentAnswers, recommendation }
+    });
   };
 
   const handleAgeGroupSelect = (ageGroup: string) => {
-    setCurrentAnswers(prev => ({ ...prev, ageGroup }));
+    updateQuizState({
+      currentAnswers: { ...quizState.currentAnswers, ageGroup }
+    });
   };
 
+  if (!currentArtist) {
+    return (
+      <QuizLayout showProgress={false}>
+        <div className="text-center text-white">
+          <p>Carregando...</p>
+        </div>
+      </QuizLayout>
+    );
+  }
+
   return (
-    <QuizLayout showProgress={true} currentStep={currentArtistIndex + 1} totalSteps={artists.length}>
-      <div className="text-center space-y-8">
+    <QuizLayout showProgress={true} currentStep={quizState.currentArtistIndex + 1} totalSteps={artists.length}>
+      <div className={`text-center space-y-8 transition-all duration-500 ${isTransitioning ? 'opacity-50' : 'opacity-100'}`}>
         {/* Artist Image and Name */}
-        <div className="mb-8">
+        <div className="mb-8 animate-fade-in">
           <div className="w-full aspect-[9/4] rounded-2xl overflow-hidden bg-gray-800 mb-4">
-            <img
+            <ImagePreloader
               src={currentArtist.image}
               alt={currentArtist.name}
               className="w-full h-full object-cover"
@@ -113,7 +145,7 @@ const Quiz = () => {
         </div>
         
         {/* Question 1: Rating */}
-        <div className="mb-8">
+        <div className="mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
           <h3 className="text-xl font-bold mb-6 text-white">
             De 1 a 5, qual nota você daria para as músicas do {currentArtist.name}?
           </h3>
@@ -124,9 +156,9 @@ const Quiz = () => {
                 key={num}
                 onClick={() => handleRatingSelect(num.toString())}
                 className={`aspect-square ${
-                  currentAnswers.rating === num.toString() 
-                    ? 'bg-green-500 border-green-500 text-white' 
-                    : 'bg-[#292929] border-[#292929] text-white hover:bg-green-500 hover:border-green-500'
+                  quizState.currentAnswers.rating === num.toString() 
+                    ? 'bg-green-500 border-green-500 text-white transform scale-110' 
+                    : 'bg-[#292929] border-[#292929] text-white hover:bg-green-500 hover:border-green-500 hover:scale-105'
                 } border-2 rounded-2xl flex items-center justify-center text-2xl font-bold transition-all duration-200`}
               >
                 {num}
@@ -136,7 +168,7 @@ const Quiz = () => {
         </div>
 
         {/* Question 2: Recommendation */}
-        <div className="mb-8">
+        <div className="mb-8 animate-slide-up" style={{ animationDelay: '0.2s' }}>
           <h3 className="text-xl font-bold mb-6 text-white">
             Recomendaria o(a) artista {currentArtist.name} para seus amigos e familiares?
           </h3>
@@ -145,9 +177,9 @@ const Quiz = () => {
             <Button
               onClick={() => handleRecommendationSelect('sim')}
               className={`${
-                currentAnswers.recommendation === 'sim'
-                  ? 'bg-green-500 border-green-500 text-white'
-                  : 'bg-[#292929] border-[#292929] text-white hover:bg-green-500 hover:border-green-500'
+                quizState.currentAnswers.recommendation === 'sim'
+                  ? 'bg-green-500 border-green-500 text-white transform scale-105'
+                  : 'bg-[#292929] border-[#292929] text-white hover:bg-green-500 hover:border-green-500 hover:scale-105'
               } border-2 font-bold py-6 rounded-2xl text-lg transition-all duration-200`}
             >
               Sim
@@ -156,9 +188,9 @@ const Quiz = () => {
             <Button
               onClick={() => handleRecommendationSelect('nao')}
               className={`${
-                currentAnswers.recommendation === 'nao'
-                  ? 'bg-green-500 border-green-500 text-white'
-                  : 'bg-[#292929] border-[#292929] text-white hover:bg-green-500 hover:border-green-500'
+                quizState.currentAnswers.recommendation === 'nao'
+                  ? 'bg-green-500 border-green-500 text-white transform scale-105'
+                  : 'bg-[#292929] border-[#292929] text-white hover:bg-green-500 hover:border-green-500 hover:scale-105'
               } border-2 font-bold py-6 rounded-2xl text-lg transition-all duration-200`}
             >
               Não
@@ -167,7 +199,7 @@ const Quiz = () => {
         </div>
 
         {/* Question 3: Age Group */}
-        <div className="mb-8">
+        <div className="mb-8 animate-slide-up" style={{ animationDelay: '0.3s' }}>
           <h3 className="text-xl font-bold mb-6 text-white">
             Qual faixa etária você acha que mais escuta o(a) artista {currentArtist.name}?
           </h3>
@@ -176,9 +208,9 @@ const Quiz = () => {
             <Button
               onClick={() => handleAgeGroupSelect('-18')}
               className={`${
-                currentAnswers.ageGroup === '-18'
-                  ? 'bg-green-500 border-green-500 text-white'
-                  : 'bg-[#292929] border-[#292929] text-white hover:bg-green-500 hover:border-green-500'
+                quizState.currentAnswers.ageGroup === '-18'
+                  ? 'bg-green-500 border-green-500 text-white transform scale-105'
+                  : 'bg-[#292929] border-[#292929] text-white hover:bg-green-500 hover:border-green-500 hover:scale-105'
               } border-2 font-bold py-6 rounded-2xl text-lg transition-all duration-200`}
             >
               -18 anos
@@ -187,9 +219,9 @@ const Quiz = () => {
             <Button
               onClick={() => handleAgeGroupSelect('+18')}
               className={`${
-                currentAnswers.ageGroup === '+18'
-                  ? 'bg-green-500 border-green-500 text-white'
-                  : 'bg-[#292929] border-[#292929] text-white hover:bg-green-500 hover:border-green-500'
+                quizState.currentAnswers.ageGroup === '+18'
+                  ? 'bg-green-500 border-green-500 text-white transform scale-105'
+                  : 'bg-[#292929] border-[#292929] text-white hover:bg-green-500 hover:border-green-500 hover:scale-105'
               } border-2 font-bold py-6 rounded-2xl text-lg transition-all duration-200`}
             >
               +18 anos
@@ -198,13 +230,15 @@ const Quiz = () => {
         </div>
 
         {/* Submit Button */}
-        <Button
-          onClick={handleSubmit}
-          disabled={!currentAnswers.rating || !currentAnswers.recommendation || !currentAnswers.ageGroup}
-          className="w-full bg-[#292929] hover:bg-gray-600 disabled:bg-gray-800 disabled:opacity-50 text-white font-bold py-4 rounded-2xl text-lg transition-all duration-200"
-        >
-          Enviar respostas
-        </Button>
+        <div className="animate-slide-up" style={{ animationDelay: '0.4s' }}>
+          <Button
+            onClick={handleSubmit}
+            disabled={!quizState.currentAnswers.rating || !quizState.currentAnswers.recommendation || !quizState.currentAnswers.ageGroup || isTransitioning}
+            className="w-full bg-[#292929] hover:bg-gray-600 disabled:bg-gray-800 disabled:opacity-50 text-white font-bold py-4 rounded-2xl text-lg transition-all duration-300 transform hover:scale-105 disabled:hover:scale-100"
+          >
+            {isTransitioning ? 'Processando...' : 'Enviar respostas'}
+          </Button>
+        </div>
       </div>
       
       <RewardPopup
